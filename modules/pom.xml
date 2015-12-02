@@ -17,6 +17,5 @@
 
     <modules>
         <module>module-impl</module>
-        <module>module-test</module>
     </modules>
 </project>

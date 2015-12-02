@@ -17,15 +17,7 @@
     </description>
 
     <modules>
-        <module>junit3</module>
         <module>junit4</module>
         <module>junit4-common</module>
-        <module>junit4-legacy</module>
-        <module>junit4-rule</module>
-        <module>junit4-rule-agent</module>
-        <module>testng</module>
-        <module>testng-agent</module>
-        <module>testng-common</module>
-        <module>agent</module>
     </modules>
 </project>
