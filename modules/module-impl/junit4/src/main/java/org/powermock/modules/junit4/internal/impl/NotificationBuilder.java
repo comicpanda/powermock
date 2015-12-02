@@ -47,7 +47,7 @@ class NotificationBuilder {
     }
 
     private static final Pattern methodDisplayNameRgx =
-            Pattern.compile("^[^\\(\\[]++");
+            Pattern.compile("^(?<methodName>.+)\\([^\\(]+\\)$");
     private final Method[] testMethods;
     private final List<?> pendingTestInstances;
     private final PowerMockTestNotifier powerMockTestNotifier;
@@ -138,38 +138,41 @@ class NotificationBuilder {
     private Method determineTestMethod(Description d) {
         Matcher matchMethodName = methodDisplayNameRgx
                 .matcher(d.getDisplayName());
-        matchMethodName.find();
-        String methodName = matchMethodName.group();
-        boolean latestTestMethodCanBeRepeated = false;
-        boolean isSpockTest = false;
-        if(d.getAnnotation(FeatureMetadata.class) != null) {
-            isSpockTest = true;
+        if(matchMethodName.find()) {
+            String methodName = matchMethodName.group("methodName");
+            
+            boolean latestTestMethodCanBeRepeated = false;
+            boolean isSpockTest = false;
+            if(d.getAnnotation(FeatureMetadata.class) != null) {
+                isSpockTest = true;
+            }
+
+            for (Method m : testMethods) {
+                String testMethodName = m.getName();
+                if (isSpockTest) {
+                    FeatureMetadata f = m.getDeclaredAnnotation(FeatureMetadata.class);
+                    if(f != null) {
+                        testMethodName = f.name();
+                    }
+                }
+                if (methodName.equals(testMethodName)) {
+                    if (m == latestMethod) {
+                        latestTestMethodCanBeRepeated = true;
+                    } else {
+                        return latestMethod = m;
+                    }
+                }
+            }
+
+            if (latestTestMethodCanBeRepeated) {
+                return latestMethod;
+            }
         }
 
-        for (Method m : testMethods) {
-            String testMethodName = m.getName();
-            if (isSpockTest) {
-                FeatureMetadata f = m.getDeclaredAnnotation(FeatureMetadata.class);
-                if(f != null) {
-                   testMethodName = f.name();
-                }
-            }
-            if (methodName.equals(testMethodName)) {
-                if (m == latestMethod) {
-                    latestTestMethodCanBeRepeated = true;
-                } else {
-                    return latestMethod = m;
-                }
-            }
-        }
-        if (latestTestMethodCanBeRepeated) {
-            return latestMethod;
-        } else {
-            new IllegalArgumentException(
-                    "Unable to determine method-name from description="
-                    + d + "; - ignored").printStackTrace();
-            return null;
-        }
+        new IllegalArgumentException(
+                "Unable to determine method-name from description="
+                + d + "; - ignored").printStackTrace();
+        return null;
     }
 
     private Class<?> reloadParamType(
