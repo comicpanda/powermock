@@ -29,6 +29,7 @@ import org.powermock.core.spi.testresult.Result;
 import org.powermock.core.spi.testresult.TestMethodResult;
 import org.powermock.tests.utils.PowerMockTestNotifier;
 import org.powermock.tests.utils.impl.MockPolicyInitializerImpl;
+import org.spockframework.runtime.model.FeatureMetadata;
 
 /**
  * Stateful class that, from information from JUnit and test-classes,
@@ -88,7 +89,7 @@ class NotificationBuilder {
             new MockPolicyInitializerImpl(testClass).initialize(testClass.getClassLoader());
             powerMockTestNotifier.notifyBeforeTestMethod(
                     testInstance, testMethod, unsupportedMethodArgs);
-            ongoingTestRuns.put(testDescription, this);            
+            ongoingTestRuns.put(testDescription, this);
         }
 
         Class<?> testClass() {
@@ -140,8 +141,20 @@ class NotificationBuilder {
         matchMethodName.find();
         String methodName = matchMethodName.group();
         boolean latestTestMethodCanBeRepeated = false;
+        boolean isSpockTest = false;
+        if(d.getAnnotation(FeatureMetadata.class) != null) {
+            isSpockTest = true;
+        }
+
         for (Method m : testMethods) {
-            if (m.getName().equals(methodName)) {
+            String testMethodName = m.getName();
+            if (isSpockTest) {
+                FeatureMetadata f = m.getDeclaredAnnotation(FeatureMetadata.class);
+                if(f != null) {
+                   testMethodName = f.name();
+                }
+            }
+            if (methodName.equals(testMethodName)) {
                 if (m == latestMethod) {
                     latestTestMethodCanBeRepeated = true;
                 } else {
@@ -276,7 +289,7 @@ class NotificationBuilder {
                 && DetectedTestRunBehaviour.TEST_INSTANCE_CREATED_FIRST == behaviour
                 && currentTestInstance != latestTestInstance) {
             /*
-             * Workaround for some bad behaviour in JUnit-4.4 default runner, 
+             * Workaround for some bad behaviour in JUnit-4.4 default runner,
              * which creates a test-instance first, even for a test that is ignored!!
              */
             currentTestInstance = latestTestInstance;

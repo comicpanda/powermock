@@ -63,7 +63,7 @@ public class MockClassLoader extends DeferSupportingClassLoader {
             "net.sf.cglib.", "javassist.",
             "org.powermock.modules.junit4.internal.", "org.powermock.modules.junit4.legacy.internal.",
             "org.powermock.modules.junit3.internal.",
-            "org.powermock"};
+            "org.powermock", "spock.", "org.spockframework."};
 
     private final String[] specificClassesToLoadButNotModify = new String[]{InvocationSubstitute.class.getName(),
             PowerMockPolicy.class.getName(),

@@ -29,6 +29,7 @@ import org.powermock.tests.utils.PowerMockTestNotifier;
 import org.powermock.tests.utils.TestChunk;
 import org.powermock.tests.utils.impl.AbstractTestSuiteChunkerImpl;
 import org.powermock.tests.utils.impl.PowerMockTestNotifierImpl;
+import org.spockframework.runtime.model.FeatureMetadata;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -125,7 +126,7 @@ public class JUnit4TestSuiteChunkerImpl extends AbstractTestSuiteChunkerImpl<Pow
 		return (potentialTestMethod.getName().startsWith("test")
 				&& Modifier.isPublic(potentialTestMethod.getModifiers())
 				&& potentialTestMethod.getReturnType().equals(Void.TYPE) && TestCase.class.isAssignableFrom(testClass) || potentialTestMethod
-				.isAnnotationPresent(Test.class));
+				.isAnnotationPresent(Test.class)) || potentialTestMethod.getDeclaredAnnotation(FeatureMetadata.class) != null;
 	}
 
 	@Override
