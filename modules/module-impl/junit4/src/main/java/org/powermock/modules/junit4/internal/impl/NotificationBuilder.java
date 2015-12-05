@@ -30,6 +30,7 @@ import org.powermock.core.spi.testresult.TestMethodResult;
 import org.powermock.tests.utils.PowerMockTestNotifier;
 import org.powermock.tests.utils.impl.MockPolicyInitializerImpl;
 import org.spockframework.runtime.model.FeatureMetadata;
+import org.spockframework.runtime.model.SpecMetadata;
 
 /**
  * Stateful class that, from information from JUnit and test-classes,
@@ -49,7 +50,7 @@ class NotificationBuilder {
     private static final Pattern methodDisplayNameRgx =
             Pattern.compile("^(?<methodName>.+)\\([^\\(]+\\)$");
     private final Method[] testMethods;
-    private final List<?> pendingTestInstances;
+    private final List<Object> pendingTestInstances;
     private final PowerMockTestNotifier powerMockTestNotifier;
     private DetectedTestRunBehaviour behaviour = DetectedTestRunBehaviour.PENDING;
     private Description currentDescription;
@@ -59,6 +60,7 @@ class NotificationBuilder {
     private Object latestTestInstance;
     private Method latestMethod;
     private static final Object[] unsupportedMethodArgs = {};
+    private boolean isSpockTest = false;
 
     private final Map<Object, List<Method>> methodsPerInstance =
             new IdentityHashMap<Object, List<Method>>() {
@@ -129,7 +131,7 @@ class NotificationBuilder {
 
     public NotificationBuilder(Method[] testMethods,
             PowerMockTestNotifier notifier,
-            List<?> pendingTestInstances) {
+            List<Object> pendingTestInstances) {
         this.testMethods = testMethods;
         this.pendingTestInstances = pendingTestInstances;
         this.powerMockTestNotifier = notifier;
@@ -140,16 +142,12 @@ class NotificationBuilder {
                 .matcher(d.getDisplayName());
         if(matchMethodName.find()) {
             String methodName = matchMethodName.group("methodName");
-            
+
             boolean latestTestMethodCanBeRepeated = false;
-            boolean isSpockTest = false;
-            if(d.getAnnotation(FeatureMetadata.class) != null) {
-                isSpockTest = true;
-            }
 
             for (Method m : testMethods) {
                 String testMethodName = m.getName();
-                if (isSpockTest) {
+                if (this.isSpockTest) {
                     FeatureMetadata f = m.getDeclaredAnnotation(FeatureMetadata.class);
                     if(f != null) {
                         testMethodName = f.name();
@@ -224,6 +222,7 @@ class NotificationBuilder {
         }
         powerMockTestNotifier.notifyBeforeTestSuiteStarted(testClass, testMethods);
         this.testClassName = testClass.getName();
+        this.isSpockTest = testClass.isAnnotationPresent(SpecMetadata.class);
     }
 
     void testStartHasBeenFired(Description d) {
@@ -257,6 +256,7 @@ class NotificationBuilder {
     }
 
     void testInstanceCreated(Object newTestInstance) {
+        boolean potentialMultipleSpockTests = this.isSpockTest && this.pendingTestInstances.size() > 1;
         switch (behaviour) {
             case PENDING:
                 behaviour = DetectedTestRunBehaviour.TEST_INSTANCE_CREATED_FIRST;
@@ -265,7 +265,11 @@ class NotificationBuilder {
             case TEST_INSTANCE_CREATED_FIRST:
                 if (methodsPerInstance.isEmpty()) {
                     behaviour = DetectedTestRunBehaviour.ALL_TESTINSTANCES_ARE_CREATED_FIRST;
-                } else if (currentTestInstance == latestTestInstance) {
+                } else if (currentTestInstance == latestTestInstance || potentialMultipleSpockTests) {
+                    if (potentialMultipleSpockTests) {
+                        this.pendingTestInstances.clear();
+                        this.pendingTestInstances.add(newTestInstance);
+                    }
                     currentTestInstance = newTestInstance;
                 } else {
                     behaviour = DetectedTestRunBehaviour.INCONSISTENT_BEHAVIOUR;
