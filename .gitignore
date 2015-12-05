@@ -8,3 +8,4 @@ target
 .springBeans
 repo
 .idea
+*.versionsBackup
