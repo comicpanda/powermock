@@ -1,3 +1,5 @@
+### This version(1.6.4.RELEASE) can work with SpockFramework.
+
 ![PowerMock](powermock.png)
 
 [![Build Status](https://travis-ci.org/jayway/powermock.svg)](https://travis-ci.org/jayway/powermock)
